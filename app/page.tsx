@@ -54,7 +54,7 @@ export default function Home() {
               </button>
             </div>
           </div>
-          <p className="chatbot-text-secondary-inverse text-sm md:text-base mt-2 md:mt-4">Chatting with the Astra chatbot is a breeze! Simply type your questions or requests in a clear and concise manner. Responses are sourced from Astra documentation and a link for further reading is provided.</p>
+          <p className="chatbot-text-secondary-inverse text-sm md:text-base mt-2 md:mt-4">Když něco nevíš, tady se to dozvíš. A pokud ne, teší se na tebe naše podpora.</p>
         </div>
         <div className='flex-1 relative overflow-y-auto my-4 md:my-6'>
           <div className='absolute w-full overflow-x-hidden'>
@@ -70,7 +70,7 @@ export default function Home() {
             <svg width="20" height="20" viewBox="0 0 20 20">
               <path d="M2.925 5.025L9.18333 7.70833L2.91667 6.875L2.925 5.025ZM9.175 12.2917L2.91667 14.975V13.125L9.175 12.2917ZM1.25833 2.5L1.25 8.33333L13.75 10L1.25 11.6667L1.25833 17.5L18.75 10L1.25833 2.5Z" />
             </svg>
-            <span className='hidden origin:block font-semibold text-sm ml-2'>Send</span>
+            <span className='hidden origin:block font-semibold text-sm ml-2'> </span>
           </button>
         </form>
         <Footer />
