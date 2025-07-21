@@ -28,7 +28,6 @@ const Bubble = React.forwardRef<HTMLDivElement, BubbleProps>(({ content }, ref) 
             remarkPlugins={[remarkGfm]}
             className="prose prose-sm max-w-none"
             components={{
-              // Custom rendering for links to support underline
               a: ({ node, ...props }) => (
                 <a
                   {...props}
@@ -37,27 +36,23 @@ const Bubble = React.forwardRef<HTMLDivElement, BubbleProps>(({ content }, ref) 
                   rel="noopener noreferrer"
                 />
               ),
-              // Support for underline in links
               u: ({ node, ...props }) => (
                 <span style={{ textDecoration: 'underline' }} {...props} />
               ),
-              // Bold text
               strong: ({ node, ...props }) => (
                 <strong className="font-bold text-gray-900" {...props} />
               ),
-              // Code blocks
-              code: ({ node, inline, ...props }) => (
+              // 🟢 OPRAVENO: props mají explicitně inline?: boolean
+              code: ({ node, inline, className, children, ...props }: { node?: any; inline?: boolean; className?: string; children?: React.ReactNode }) => (
                 inline ? (
-                  <code className="bg-gray-200 px-1 py-0.5 rounded text-sm" {...props} />
+                  <code className="bg-gray-200 px-1 py-0.5 rounded text-sm" {...props}>{children}</code>
                 ) : (
-                  <code className="block bg-gray-200 p-2 rounded text-sm overflow-x-auto" {...props} />
+                  <code className="block bg-gray-200 p-2 rounded text-sm overflow-x-auto" {...props}>{children}</code>
                 )
               ),
-              // Headers
               h3: ({ node, ...props }) => (
                 <h3 className="text-lg font-semibold mt-4 mb-2" {...props} />
               ),
-              // Lists
               ul: ({ node, ...props }) => (
                 <ul className="list-disc pl-5 space-y-1" {...props} />
               ),
