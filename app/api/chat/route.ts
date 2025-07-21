@@ -1,9 +1,7 @@
-import OpenAI from 'openai';
-import { OpenAIStream, StreamingTextResponse } from 'ai';
+import { streamText } from 'ai';
+import { openai } from '@ai-sdk/openai';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+
 
 // Astra DB HTTP API helper
 async function searchKnowledgeBase(query: string, limit: number = 5) {
@@ -51,12 +49,8 @@ export async function POST(req: Request) {
     const latestMessage = messages[messages?.length - 1]?.content;
 
     let docContext = '';
-    
     if (useRag) {
-      // Search using HTTP API
       const documents = await searchKnowledgeBase(latestMessage);
-      
-      // Format the context with title and content
       docContext = `
         START CONTEXT
         ${documents?.map((doc: any) => {
@@ -100,16 +94,18 @@ Relevance: ${((doc.$similarity || 0) * 100).toFixed(1)}%
       },
     ];
 
-    const response = await openai.chat.completions.create({
-      model: llm ?? 'gpt-3.5-turbo',
-      stream: true,
+    // ❗❗ SPRÁVNÝ způsob volání:
+    // model: openai("gpt-3.5-turbo", { apiKey: ... })    
+    // Pokud máš klíč v env, stačí pouze první argument!
+    const streamResult = await streamText({
+      model: openai(llm ?? 'gpt-3.5-turbo'),
       messages: [...ragPrompt, ...messages],
       temperature: 0.7,
-      max_tokens: 1000,
+      maxTokens: 1000,
     });
 
-    const stream = OpenAIStream(response);
-    return new StreamingTextResponse(stream);
+    return streamResult.toDataStreamResponse();
+
   } catch (error) {
     console.error('Chat API Error:', error);
     return new Response(

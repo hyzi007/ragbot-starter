@@ -1,7 +1,8 @@
 "use client";
 import {useEffect, useRef, useState} from 'react';
 import Bubble from '../components/Bubble'
-import { useChat, Message } from 'ai/react';
+import { useChat, Message } from '@ai-sdk/react';
+
 import Footer from '../components/Footer';
 import Configure from '../components/Configure';
 
@@ -32,12 +33,12 @@ export default function Home() {
   }, [messages]);
 
   const handleSend = (e) => {
-    handleSubmit(e, { options: { body: { useRag, llm, similarityMetric }}});
+    handleSubmit(e,  { body: { useRag, llm, similarityMetric }});
   }
 
   const handlePrompt = (promptText) => {
     const msg: Message = { id: crypto.randomUUID(), content: promptText, role: 'user' };
-    append(msg, { options: { body: { useRag, llm, similarityMetric }}});
+    append(msg,  { body: { useRag, llm, similarityMetric }});
   };
 
   return (
