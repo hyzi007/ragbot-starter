@@ -10,9 +10,9 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@ai-sdk/react": "^1.2.12",
     "@datastax/astra-db-ts": "^0.1.4",
     "@types/node": "^20.8.10",
-    "ai": "^2.2.37",
     "geist": "^1.1.0",
     "langchain": "^0.0.179",
     "next": "14.0.1",
