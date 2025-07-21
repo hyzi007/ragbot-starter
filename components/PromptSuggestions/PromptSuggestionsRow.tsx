@@ -2,10 +2,10 @@ import PromptSuggestionButton from "./PromptSuggestionButton";
 
 const PromptSuggestionRow = ({ onPromptClick }) => {
   const prompts = [
-    'How does similarity search work with a Vector DB?',
-    'What is DataStax Enterprise?',
-    'How does CassIO work?',
-    'What are some common FAQs about Astra?',
+    'Jak ověřím svoji identitu online?',
+    'Nepřišla mi ověřovací SMS!',
+    'Jak dokončím plnou registraci?',
+    'Mohu svou identitu ověřit fyzicky?',
   ];
 
   return (
