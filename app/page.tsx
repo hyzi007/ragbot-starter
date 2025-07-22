@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from 'react';
 import { useChat, Message } from '@ai-sdk/react';
-import { Send, Sparkles, Bot, User, Settings, Moon, Sun } from 'lucide-react';
+import { Send, Anchor, Bot, User, Settings, Moon, Sun } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import useConfiguration from './hooks/useConfiguration';
@@ -17,7 +17,7 @@ const customPrompts = [
 export default function Home() {
   const { messages, input, handleInputChange, handleSubmit, append, isLoading } = useChat();
   const { useRag, llm, similarityMetric, setConfiguration } = useConfiguration();
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
   const [configureOpen, setConfigureOpen] = useState(false);
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -114,10 +114,10 @@ export default function Home() {
           {messages.length === 0 && (
             <div className="text-center py-12">
               <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full mb-6">
-                <Sparkles className="w-10 h-10 text-white" />
-              </div>
+                <Anchor className="w-10 h-10 text-white" />
+                </div>
               <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-                Ahoj! Jak vám mohu pomoci?
+                Ahoy! Jak ti mohu pomoci?
               </h2>
               <p className="text-gray-600 dark:text-gray-400 mb-8 max-w-md mx-auto">
                 Když něco nevíš, tady se to dozvíš. A pokud ne, těší se na tebe naše podpora.
