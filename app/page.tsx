@@ -1,15 +1,12 @@
 "use client";
-import {useEffect, useRef, useState} from 'react';
-import Bubble from '../components/Bubble'
+import { useEffect, useRef, useState } from 'react';
 import { useChat, Message } from '@ai-sdk/react';
-
-import Footer from '../components/Footer';
+import { Send, Sparkles, Bot, User, Settings, Moon, Sun } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import useConfiguration from './hooks/useConfiguration';
 import Configure from '../components/Configure';
 
-import ThemeButton from '../components/ThemeButton';
-import useConfiguration from './hooks/useConfiguration';
-
-// Custom prompt suggestions for your knowledge base
 const customPrompts = [
   "Jaké další bonusy mohu získat?",
   "Jak si aktivuji bonus za vklad?",
@@ -18,11 +15,12 @@ const customPrompts = [
 ];
 
 export default function Home() {
-  const { append, messages, input, handleInputChange, handleSubmit } = useChat();
+  const { messages, input, handleInputChange, handleSubmit, append, isLoading } = useChat();
   const { useRag, llm, similarityMetric, setConfiguration } = useConfiguration();
-
-  const messagesEndRef = useRef(null);
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [configureOpen, setConfigureOpen] = useState(false);
+  const messagesEndRef = useRef<null | HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -32,86 +30,255 @@ export default function Home() {
     scrollToBottom();
   }, [messages]);
 
-  const handleSend = (e) => {
-    handleSubmit(e,  { body: { useRag, llm, similarityMetric }});
-  }
+  useEffect(() => {
+    // Load theme from localStorage
+    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
+    if (savedTheme) {
+      setTheme(savedTheme);
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      setTheme('dark');
+    }
+  }, []);
 
-  const handlePrompt = (promptText) => {
-    const msg: Message = { id: crypto.randomUUID(), content: promptText, role: 'user' };
-    append(msg,  { body: { useRag, llm, similarityMetric }});
+  useEffect(() => {
+    // Apply theme
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const handleSend = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!input.trim() || isLoading) return;
+    handleSubmit(e, { body: { useRag, llm, similarityMetric } });
+  };
+
+  const handlePrompt = (promptText: string) => {
+    const msg: Message = { 
+      id: crypto.randomUUID(), 
+      content: promptText, 
+      role: 'user' 
+    };
+    append(msg, { body: { useRag, llm, similarityMetric } });
+  };
+
+  const toggleTheme = () => {
+    setTheme(theme === 'light' ? 'dark' : 'light');
   };
 
   return (
-    <>
-    <main className="flex h-screen flex-col items-center justify-center">
-      <section className='chatbot-section flex flex-col origin:w-[800px] w-full origin:h-[735px] h-full rounded-md p-2 md:p-6'>
-        <div className='chatbot-header pb-6'>
-          <div className='flex justify-between'>
-            <div className='flex items-center gap-2'>
-              <svg width="24" height="25" viewBox="0 0 24 25">
-                <path d="M20 9.96057V7.96057C20 6.86057 19.1 5.96057 18 5.96057H15C15 4.30057 13.66 2.96057 12 2.96057C10.34 2.96057 9 4.30057 9 5.96057H6C4.9 5.96057 4 6.86057 4 7.96057V9.96057C2.34 9.96057 1 11.3006 1 12.9606C1 14.6206 2.34 15.9606 4 15.9606V19.9606C4 21.0606 4.9 21.9606 6 21.9606H18C19.1 21.9606 20 21.0606 20 19.9606V15.9606C21.66 15.9606 23 14.6206 23 12.9606C23 11.3006 21.66 9.96057 20 9.96057ZM7.5 12.4606C7.5 11.6306 8.17 10.9606 9 10.9606C9.83 10.9606 10.5 11.6306 10.5 12.4606C10.5 13.2906 9.83 13.9606 9 13.9606C8.17 13.9606 7.5 13.2906 7.5 12.4606ZM16 17.9606H8V15.9606H16V17.9606ZM15 13.9606C14.17 13.9606 13.5 13.2906 13.5 12.4606C13.5 11.6306 14.17 10.9606 15 10.9606C15.83 10.9606 16.5 11.6306 16.5 12.4606C16.5 13.2906 15.83 13.9606 15 13.9606Z" />
-              </svg>
-              <h1 className='chatbot-text-primary text-xl md:text-2xl font-medium'>NÁPOVĚDA</h1>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 transition-colors duration-200">
+      {/* Header */}
+      <header className="fixed top-0 left-0 right-0 z-20 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700">
+        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl">
+              <Bot className="w-6 h-6 text-white" />
             </div>
-            <div className='flex gap-1'>
-              <ThemeButton />
-              <button onClick={() => setConfigureOpen(true)}>
-                <svg width="24" height="25" viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M19.14 13.4006C19.18 13.1006 19.2 12.7906 19.2 12.4606C19.2 12.1406 19.18 11.8206 19.13 11.5206L21.16 9.94057C21.34 9.80057 21.39 9.53057 21.28 9.33057L19.36 6.01057C19.24 5.79057 18.99 5.72057 18.77 5.79057L16.38 6.75057C15.88 6.37057 15.35 6.05057 14.76 5.81057L14.4 3.27057C14.36 3.03057 14.16 2.86057 13.92 2.86057H10.08C9.83999 2.86057 9.64999 3.03057 9.60999 3.27057L9.24999 5.81057C8.65999 6.05057 8.11999 6.38057 7.62999 6.75057L5.23999 5.79057C5.01999 5.71057 4.76999 5.79057 4.64999 6.01057L2.73999 9.33057C2.61999 9.54057 2.65999 9.80057 2.85999 9.94057L4.88999 11.5206C4.83999 11.8206 4.79999 12.1506 4.79999 12.4606C4.79999 12.7706 4.81999 13.1006 4.86999 13.4006L2.83999 14.9806C2.65999 15.1206 2.60999 15.3906 2.71999 15.5906L4.63999 18.9106C4.75999 19.1306 5.00999 19.2006 5.22999 19.1306L7.61999 18.1706C8.11999 18.5506 8.64999 18.8706 9.23999 19.1106L9.59999 21.6506C9.64999 21.8906 9.83999 22.0606 10.08 22.0606H13.92C14.16 22.0606 14.36 21.8906 14.39 21.6506L14.75 19.1106C15.34 18.8706 15.88 18.5506 16.37 18.1706L18.76 19.1306C18.98 19.2106 19.23 19.1306 19.35 18.9106L21.27 15.5906C21.39 15.3706 21.34 15.1206 21.15 14.9806L19.14 13.4006ZM12 16.0606C10.02 16.0606 8.39999 14.4406 8.39999 12.4606C8.39999 10.4806 10.02 8.86057 12 8.86057C13.98 8.86057 15.6 10.4806 15.6 12.4606C15.6 14.4406 13.98 16.0606 12 16.0606Z" />
-                </svg>
-              </button>
+            <div>
+              <h1 className="text-xl font-bold text-gray-900 dark:text-white">NÁPOVĚDA</h1>
+              <p className="text-xs text-gray-600 dark:text-gray-400">Váš AI asistent</p>
             </div>
           </div>
-          <p className="chatbot-text-secondary-inverse text-sm md:text-base mt-2 md:mt-4">
-            Když něco nevíš, tady se to dozvíš. A pokud ne, teší se na tebe naše podpora.
+          
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={toggleTheme}
+              className="p-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              aria-label="Toggle theme"
+            >
+              {theme === 'light' ? (
+                <Moon className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+              ) : (
+                <Sun className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+              )}
+            </button>
+            <button
+              onClick={() => setConfigureOpen(true)}
+              className="p-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              aria-label="Settings"
+            >
+              <Settings className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Chat Container */}
+      <main className="pt-20 pb-32 px-4">
+        <div className="max-w-3xl mx-auto">
+          {/* Welcome Message */}
+          {messages.length === 0 && (
+            <div className="text-center py-12">
+              <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full mb-6">
+                <Sparkles className="w-10 h-10 text-white" />
+              </div>
+              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+                Ahoj! Jak vám mohu pomoci?
+              </h2>
+              <p className="text-gray-600 dark:text-gray-400 mb-8 max-w-md mx-auto">
+                Když něco nevíš, tady se to dozvíš. A pokud ne, těší se na tebe naše podpora.
+              </p>
+              
+              {/* Prompt Suggestions */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl mx-auto">
+                {customPrompts.map((prompt, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handlePrompt(prompt)}
+                    className="group relative p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400 transition-all duration-200 text-left hover:shadow-lg hover:-translate-y-0.5"
+                  >
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">
+                      {prompt}
+                    </span>
+                    <Send className="absolute bottom-3 right-3 w-4 h-4 text-gray-400 group-hover:text-blue-500 transition-colors" />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Messages */}
+          <div className="space-y-4">
+            {messages.map((message, index) => (
+              <MessageBubble key={index} message={message} />
+            ))}
+            {isLoading && (
+              <div className="flex items-start space-x-3">
+                <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                  <Bot className="w-5 h-5 text-white" />
+                </div>
+                <div className="bg-white dark:bg-gray-800 rounded-2xl rounded-tl-none px-6 py-4 shadow-sm">
+                  <div className="flex space-x-2">
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </div>
+                </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+        </div>
+      </main>
+
+      {/* Input Area */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-t border-gray-200 dark:border-gray-700">
+        <form onSubmit={handleSend} className="max-w-3xl mx-auto p-4">
+          <div className="relative">
+            <input
+              ref={inputRef}
+              type="text"
+              value={input}
+              onChange={handleInputChange}
+              placeholder="Napište svůj dotaz..."
+              className="w-full px-6 py-4 pr-14 bg-gray-100 dark:bg-gray-800 rounded-full text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+              disabled={isLoading}
+            />
+            <button
+              type="submit"
+              disabled={!input.trim() || isLoading}
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105"
+            >
+              <Send className="w-5 h-5" />
+            </button>
+          </div>
+          <p className="text-xs text-center text-gray-500 dark:text-gray-400 mt-2">
+            Powered by DataStax Astra DB & OpenAI
           </p>
-        </div>
-        <div className='flex-1 relative overflow-y-auto my-4 md:my-6'>
-          <div className='absolute w-full overflow-x-hidden'>
-            {messages.map((message, index) => <Bubble ref={messagesEndRef} key={`message-${index}`} content={message} />)}
-          </div>
-        </div>
-        {(!messages || messages.length === 0) && (
-          <div className="mb-4">
-            <p className="text-center text-sm text-gray-600 mb-3">Zkuste některý z těchto dotazů:</p>
-            <div className="flex flex-wrap gap-2 justify-center">
-              {customPrompts.map((prompt, index) => (
-                <button
-                  key={index}
-                  onClick={() => handlePrompt(prompt)}
-                  className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-full text-sm transition-colors"
-                >
-                  {prompt}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-        <form className='flex h-[40px] gap-2' onSubmit={handleSend}>
-          <input 
-            onChange={handleInputChange} 
-            value={input} 
-            className='chatbot-input flex-1 text-sm md:text-base outline-none bg-transparent rounded-md p-2' 
-            placeholder='Zeptejte se na cokoliv...' 
-          />
-          <button type="submit" className='chatbot-send-button flex rounded-md items-center justify-center px-2.5 origin:px-3'>
-            <svg width="20" height="20" viewBox="0 0 20 20">
-              <path d="M2.925 5.025L9.18333 7.70833L2.91667 6.875L2.925 5.025ZM9.175 12.2917L2.91667 14.975V13.125L9.175 12.2917ZM1.25833 2.5L1.25 8.33333L13.75 10L1.25 11.6667L1.25833 17.5L18.75 10L1.25833 2.5Z" />
-            </svg>
-            <span className='hidden origin:block font-semibold text-sm ml-2'>Odeslat</span>
-          </button>
         </form>
-        <Footer />
-      </section>
-    </main>
-    <Configure
-      isOpen={configureOpen}
-      onClose={() => setConfigureOpen(false)}
-      useRag={useRag}
-      llm={llm}
-      similarityMetric={similarityMetric}
-      setConfiguration={setConfiguration}
-    />
-    </>
-  )
+      </div>
+
+      {/* Configure Modal */}
+      <Configure
+        isOpen={configureOpen}
+        onClose={() => setConfigureOpen(false)}
+        useRag={useRag}
+        llm={llm}
+        similarityMetric={similarityMetric}
+        setConfiguration={setConfiguration}
+      />
+    </div>
+  );
+}
+
+// Message Bubble Component
+function MessageBubble({ message }: { message: Message }) {
+  const isUser = message.role === 'user';
+
+  return (
+    <div className={`flex items-start space-x-3 ${isUser ? 'flex-row-reverse space-x-reverse' : ''}`}>
+      <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+        isUser 
+          ? 'bg-gray-200 dark:bg-gray-700' 
+          : 'bg-gradient-to-br from-blue-500 to-purple-600'
+      }`}>
+        {isUser ? (
+          <User className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+        ) : (
+          <Bot className="w-5 h-5 text-white" />
+        )}
+      </div>
+      
+      <div className={`max-w-[80%] ${isUser ? 'text-right' : ''}`}>
+        <div className={`inline-block px-6 py-3 rounded-2xl ${
+          isUser 
+            ? 'bg-blue-500 text-white rounded-tr-none' 
+            : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-tl-none shadow-sm'
+        }`}>
+          {isUser ? (
+            <p className="text-sm">{message.content}</p>
+          ) : (
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              className="prose prose-sm dark:prose-invert max-w-none"
+              components={{
+                a: ({ href, children }) => (
+                  <a
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-500 hover:text-blue-600 underline decoration-1 underline-offset-2 transition-colors"
+                  >
+                    {children}
+                  </a>
+                ),
+                strong: ({ children }) => (
+                  <strong className="font-bold text-gray-900 dark:text-white">{children}</strong>
+                ),
+                h3: ({ children }) => (
+                  <h3 className="text-lg font-semibold mt-4 mb-2 text-gray-900 dark:text-white flex items-center gap-2">
+                    {children}
+                  </h3>
+                ),
+                code: ({ inline, className, children, ...props }: any) => {
+                  const match = /language-(\w+)/.exec(className || '');
+                  return inline ? (
+                    <code className="bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-sm font-mono" {...props}>
+                      {children}
+                    </code>
+                  ) : (
+                    <code className="block bg-gray-100 dark:bg-gray-700 p-3 rounded-lg text-sm font-mono overflow-x-auto" {...props}>
+                      {children}
+                    </code>
+                  );
+                },
+                ul: ({ children }) => (
+                  <ul className="list-disc pl-5 space-y-1">{children}</ul>
+                ),
+                li: ({ children }) => (
+                  <li className="text-sm leading-relaxed">{children}</li>
+                ),
+              }}
+            >
+              {message.content}
+            </ReactMarkdown>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
