@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from 'react';
 import { useChat, Message } from '@ai-sdk/react';
-import { Send, Anchor, Bot, User, Settings, Moon, Sun } from 'lucide-react';
+import { Send, Sparkles, Bot, User, Settings, Moon, Sun } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import useConfiguration from './hooks/useConfiguration';
@@ -65,6 +65,15 @@ export default function Home() {
     append(msg, { body: { useRag, llm, similarityMetric } });
   };
 
+  const handleSourceClick = (title: string) => {
+    const msg: Message = { 
+      id: crypto.randomUUID(), 
+      content: `Řekni mi více o: ${title}`, 
+      role: 'user' 
+    };
+    append(msg, { body: { useRag, llm, similarityMetric } });
+  };
+
   const toggleTheme = () => {
     setTheme(theme === 'light' ? 'dark' : 'light');
   };
@@ -114,10 +123,10 @@ export default function Home() {
           {messages.length === 0 && (
             <div className="text-center py-12">
               <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full mb-6">
-                <Anchor className="w-10 h-10 text-white" />
-                </div>
+                <Sparkles className="w-10 h-10 text-white" />
+              </div>
               <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-                Ahoy! Jak ti mohu pomoci?
+                Ahoj! Jak vám mohu pomoci?
               </h2>
               <p className="text-gray-600 dark:text-gray-400 mb-8 max-w-md mx-auto">
                 Když něco nevíš, tady se to dozvíš. A pokud ne, těší se na tebe naše podpora.
@@ -144,7 +153,11 @@ export default function Home() {
           {/* Messages */}
           <div className="space-y-4">
             {messages.map((message, index) => (
-              <MessageBubble key={index} message={message} />
+              <MessageBubble 
+                key={index} 
+                message={message} 
+                onSourceClick={handleSourceClick}
+              />
             ))}
             {isLoading && (
               <div className="flex items-start space-x-3">
@@ -205,9 +218,42 @@ export default function Home() {
   );
 }
 
+type MessageBubbleProps = {
+  message: Message;
+  onSourceClick: (title: string) => void;
+};
+
 // Message Bubble Component
-function MessageBubble({ message }: { message: Message }) {
+function MessageBubble({ message, onSourceClick }: MessageBubbleProps) {
   const isUser = message.role === 'user';
+
+  // Parse sources from the message
+  const parseMessage = (content: string) => {
+    const sourcesMatch = content.match(/===SOURCES===([\s\S]*?)===END_SOURCES===/);
+    
+    if (!sourcesMatch) {
+      return { mainContent: content, sources: [] };
+    }
+
+    const mainContent = content.replace(/===SOURCES===[\s\S]*?===END_SOURCES===/, '').trim();
+    const sourcesText = sourcesMatch[1];
+    
+    const sources = sourcesText.split('---').filter(s => s.trim()).map(sourceText => {
+      const titleMatch = sourceText.match(/TITLE:\s*(.+)/);
+      const urlMatch = sourceText.match(/URL:\s*(.+)/);
+      const relevanceMatch = sourceText.match(/RELEVANCE:\s*(.+)/);
+      
+      return {
+        title: titleMatch ? titleMatch[1].trim() : '',
+        url: urlMatch ? urlMatch[1].trim() : '',
+        relevance: relevanceMatch ? parseFloat(relevanceMatch[1].trim()) : 0
+      };
+    });
+
+    return { mainContent, sources };
+  };
+
+  const { mainContent, sources } = isUser ? { mainContent: message.content, sources: [] } : parseMessage(message.content);
 
   return (
     <div className={`flex items-start space-x-3 ${isUser ? 'flex-row-reverse space-x-reverse' : ''}`}>
@@ -232,52 +278,116 @@ function MessageBubble({ message }: { message: Message }) {
           {isUser ? (
             <p className="text-sm">{message.content}</p>
           ) : (
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              className="prose prose-sm dark:prose-invert max-w-none"
-              components={{
-                a: ({ href, children }) => (
-                  <a
-                    href={href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-500 hover:text-blue-600 underline decoration-1 underline-offset-2 transition-colors"
-                  >
-                    {children}
-                  </a>
-                ),
-                strong: ({ children }) => (
-                  <strong className="font-bold text-gray-900 dark:text-white">{children}</strong>
-                ),
-                h3: ({ children }) => (
-                  <h3 className="text-lg font-semibold mt-4 mb-2 text-gray-900 dark:text-white flex items-center gap-2">
-                    {children}
-                  </h3>
-                ),
-                code: ({ inline, className, children, ...props }: any) => {
-                  const match = /language-(\w+)/.exec(className || '');
-                  return inline ? (
-                    <code className="bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-sm font-mono" {...props}>
+            <div className="text-sm">
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                className="prose prose-sm dark:prose-invert max-w-none"
+                components={{
+                  a: ({ href, children }) => (
+                    <a
+                      href={href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-500 hover:text-blue-600 underline decoration-1 underline-offset-2 transition-colors"
+                    >
+                      {children}
+                    </a>
+                  ),
+                  strong: ({ children }) => (
+                    <strong className="font-bold text-gray-900 dark:text-white">{children}</strong>
+                  ),
+                  h3: ({ children }) => (
+                    <h3 className="text-lg font-semibold mt-4 mb-2 text-gray-900 dark:text-white flex items-center gap-2">
+                      {children}
+                    </h3>
+                  ),
+                  code: ({ className, children, ...props }: any) => (
+                    <code 
+                      className={`${
+                        className?.includes('language-') 
+                          ? 'block bg-gray-100 dark:bg-gray-700 p-3 rounded-lg text-sm font-mono overflow-x-auto' 
+                          : 'bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-sm font-mono'
+                      }`} 
+                      {...props}
+                    >
                       {children}
                     </code>
-                  ) : (
-                    <code className="block bg-gray-100 dark:bg-gray-700 p-3 rounded-lg text-sm font-mono overflow-x-auto" {...props}>
-                      {children}
-                    </code>
-                  );
-                },
-                ul: ({ children }) => (
-                  <ul className="list-disc pl-5 space-y-1">{children}</ul>
-                ),
-                li: ({ children }) => (
-                  <li className="text-sm leading-relaxed">{children}</li>
-                ),
-              }}
-            >
-              {message.content}
-            </ReactMarkdown>
+                  ),
+                  ul: ({ children }) => (
+                    <ul className="list-disc pl-5 space-y-1">{children}</ul>
+                  ),
+                  li: ({ children }) => (
+                    <li className="text-sm leading-relaxed">{children}</li>
+                  ),
+                }}
+              >
+                {mainContent}
+              </ReactMarkdown>
+            </div>
           )}
         </div>
+        
+        {/* Sources section */}
+        {sources.length > 0 && (
+          <div className="mt-4 space-y-3">
+            <p className="text-xs font-medium text-gray-600 dark:text-gray-400 px-2">
+              📚 Další zdroje k prozkoumání:
+            </p>
+            <div className="grid gap-2">
+              {sources.map((source, index) => (
+                <button
+                  key={index}
+                  onClick={() => onSourceClick(source.title)}
+                  className="group relative p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400 transition-all duration-200 text-left hover:shadow-lg hover:-translate-y-0.5 flex items-center justify-between"
+                >
+                  <div className="flex-1">
+                    <h4 className="text-sm font-medium text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                      {source.title}
+                    </h4>
+                    {source.url && source.url !== 'N/A' && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
+                        {source.url}
+                      </p>
+                    )}
+                  </div>
+                  
+                  {/* Circular progress for relevance */}
+                  <div className="flex-shrink-0 ml-4">
+                    <div className="relative w-12 h-12">
+                      <svg className="w-12 h-12 transform -rotate-90">
+                        <circle
+                          cx="24"
+                          cy="24"
+                          r="20"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                          fill="none"
+                          className="text-gray-200 dark:text-gray-700"
+                        />
+                        <circle
+                          cx="24"
+                          cy="24"
+                          r="20"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                          fill="none"
+                          strokeDasharray={`${2 * Math.PI * 20}`}
+                          strokeDashoffset={`${2 * Math.PI * 20 * (1 - source.relevance / 100)}`}
+                          className="text-blue-500 transition-all duration-300"
+                        />
+                      </svg>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="text-xs font-bold text-gray-900 dark:text-white">
+                          {Math.round(source.relevance)}%
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

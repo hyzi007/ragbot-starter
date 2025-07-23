@@ -1,8 +1,6 @@
 import { streamText } from 'ai';
 import { openai } from '@ai-sdk/openai';
 
-
-
 // Astra DB HTTP API helper
 async function searchKnowledgeBase(query: string, limit: number = 5) {
   const url = `${process.env.ASTRA_DB_API_ENDPOINT}/api/json/v1/default_keyspace/knowledge_base`;
@@ -49,8 +47,12 @@ export async function POST(req: Request) {
     const latestMessage = messages[messages?.length - 1]?.content;
 
     let docContext = '';
+    
     if (useRag) {
+      // Search using HTTP API
       const documents = await searchKnowledgeBase(latestMessage);
+      
+      // Format the context with title and content
       docContext = `
         START CONTEXT
         ${documents?.map((doc: any) => {
@@ -75,9 +77,7 @@ Relevance: ${((doc.$similarity || 0) * 100).toFixed(1)}%
         Instructions:
         - If using context, prioritize information from higher relevance scores
         - ALWAYS cite sources by mentioning the article title in **bold** format like this: **Article Title**
-        - When you use information from a specific article, include its relevance score in parentheses, e.g., (95.2% relevance)
-        - If the context contains a URL, ALWAYS include it at the end of the relevant section as a markdown link: [Číst více](URL)
-        - Format URLs with underline using this syntax: [<u>Číst více</u>](URL)
+        - When you use information from a specific article, mention it naturally in the text
         - If the answer is not in the context, say "Nemám k této otázce informace ve znalostní databázi"
         - Be concise but thorough in your responses
         - Use markdown formatting:
@@ -85,27 +85,31 @@ Relevance: ${((doc.$similarity || 0) * 100).toFixed(1)}%
           - *Italic* for emphasis
           - Lists where appropriate
           - Code blocks for technical content
-        - At the end of your response, if there are relevant URLs, create a section:
+        - At the end of your response, if there are relevant sources, add a special section with this EXACT format:
           
-          ### 📚 Další zdroje:
-          - [<u>Article Title</u>](URL) (relevance %)
+          ===SOURCES===
+          TITLE: [exact article title]
+          URL: [url if available]
+          RELEVANCE: [relevance percentage]
+          ---
+          TITLE: [next article title]
+          URL: [url if available]  
+          RELEVANCE: [relevance percentage]
+          ===END_SOURCES===
           
         - Respond in Czech language`,
       },
     ];
 
-    // ❗❗ SPRÁVNÝ způsob volání:
-    // model: openai("gpt-3.5-turbo", { apiKey: ... })    
-    // Pokud máš klíč v env, stačí pouze první argument!
-    const streamResult = await streamText({
+    // Use the new AI SDK format
+    const result = await streamText({
       model: openai(llm ?? 'gpt-3.5-turbo'),
       messages: [...ragPrompt, ...messages],
       temperature: 0.7,
       maxTokens: 1000,
     });
 
-    return streamResult.toDataStreamResponse();
-
+    return result.toDataStreamResponse();
   } catch (error) {
     console.error('Chat API Error:', error);
     return new Response(
