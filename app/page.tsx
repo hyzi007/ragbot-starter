@@ -217,7 +217,6 @@ export default function Home() {
     </div>
   );
 }
-
 type MessageBubbleProps = {
   message: Message;
   onSourceClick: (title: string) => void;
@@ -293,9 +292,28 @@ function MessageBubble({ message, onSourceClick }: MessageBubbleProps) {
                       {children}
                     </a>
                   ),
-                  strong: ({ children }) => (
-                    <strong className="font-bold text-gray-900 dark:text-white">{children}</strong>
-                  ),
+                  strong: ({ children }) => {
+                    // Check if this bold text is an article reference
+                    const text = children?.toString() || '';
+                    const matchingSource = sources.find(source => 
+                      source.title.toLowerCase() === text.toLowerCase()
+                    );
+                    
+                    if (matchingSource && matchingSource.url && matchingSource.url !== 'N/A') {
+                      return (
+                        <a
+                          href={matchingSource.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                        >
+                          {children}
+                        </a>
+                      );
+                    }
+                    
+                    return <strong className="font-bold text-gray-900 dark:text-white">{children}</strong>;
+                  },
                   h3: ({ children }) => (
                     <h3 className="text-lg font-semibold mt-4 mb-2 text-gray-900 dark:text-white flex items-center gap-2">
                       {children}
